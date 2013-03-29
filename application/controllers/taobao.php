@@ -58,8 +58,19 @@ class Taobao extends CI_Controller {
 		if ($this->input->post('deal') === "deal") {
 			# code...
 			echo "deal";
+			$num = 0;
+			$query = $this->db->get_where('goods', array('dealerId' => $pdata["dealerId"]))->result();
+			foreach ($query as $item) {
+				# code...
+				$itemId = $item->goodsId;
+				$i = $this->Page_model->add_deal_data($itemId);
+				$num = $num + $i;
+			}
+
+			echo "<br />".$num;
 			//$this->Page_model->add_deal_data($pdata["dealerId"]);
-			print_r($this->Page_model->get_deal_data($id, $page));
+			// print_r($this->Page_model->get_deal_data($id, $page));
+			//print_r($query);
 		}
 		// print_r($this->input->post());
 	}

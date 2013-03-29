@@ -52,26 +52,26 @@ class Page_model extends CI_Model {
 
 	public function add_deal_data($item_id)
 	{
-
 		$url = "http://detail.tmall.com/item.htm?id=".$item_id;
 		$res = curlRequest($url);
 		$dealerId = get_mid_str($res,"userid=", ";\">");
 		$tmpurl = del_side_str($res, "detail:params=\"", ",showBuyerList");
 		$tmpurl = str_replace("false", "true", $tmpurl);
-		$pageNum = 100;
+		// echo $tmpurl;
+		$page = 1;
 
 		$j = 0;
 
-		for ($page=1; $page <= $pageNum; $page++) { 
+		while (($pageData = $this->get_deal_data($tmpurl, $page)) != 0) { 
 			# code...			
-			$pageData = $this->get_deal_data($tmpurl, $page);
-
 			foreach ($pageData as $item) {
 				# code...
 				$item["dealerId"] = $dealerId;
+				$item["goodsId"] = $item_id;
 				$this->db->replace('deal', $item);
 				$j++;
 			}
+			$page++;
 		}
 
 		return $j;
@@ -183,23 +183,33 @@ class Page_model extends CI_Model {
 		$dealPage = "<html><head><META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body>".$str."</table></body></html>";
 		// return $dataDeal;
 		// return $dealPage;
+		// echo $dealPage;
 		$i = 0;
 		$dom = str_get_html($dealPage);
-		foreach ($dom->find('tr') as $val) {
+
+		if ($dom->find('tr td[class=cell-align-l]',0)) {
 			# code...
-			if ($i!=0) {
-				# code...
-				$deal[$i-1]["goodsId"] = $item_id;
-				//$deal[$i-1]["dealerId"] = $dealerId;
-				$deal[$i-1]["userNick"] = str_replace(" ", "", trim($val->children(0)->plaintext));
-				$deal[$i-1]["price"] = get_mid_str($val->innertext, "<em>", "</em>");
-				$deal[$i-1]["dealTime"] = $val->children(4)->plaintext;
-				$deal[$i-1]["count"] = $val->children(3)->plaintext;
-			}			
-			$i++;
+			foreach ($dom->find('tr') as $val) {
+			# code...
+				if ($i!=0) {
+					# code...
+					# $deal[$i-1]["goodsId"] = $item_id;
+					# $deal[$i-1]["dealerId"] = $dealerId;
+					$dealData["userNick"] = str_replace(" ", "", trim($val->children(0)->plaintext));
+					$dealData["price"] = get_mid_str($val->innertext, "<em>", "</em>");
+					$dealData["dealTime"] = $val->children(4)->plaintext;
+					$dealData["count"] = $val->children(3)->plaintext;
+					$deal[$i-1] = $dealData;
+				}			
+				$i++;
+			}
+			$dom->clear();
+			return $deal;
+		} else {
+			# code...
+			$dom->clear();
+			return 0;
 		}
-		$dom->clear();
-		return $deal;
 	}
 
 }
